@@ -1,8 +1,16 @@
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(SpriteRenderer))]
 public class PlayerController : MonoBehaviour
 {
+    public enum AbilityForm
+    {
+        Triangle,
+        Square,
+        Circle
+    }
+
     [Header("References")]
     [SerializeField] private InputManager input;
 
@@ -10,12 +18,26 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private float jumpForce = 8f;
 
+    [Header("Abilities - Sprites")]
+    [SerializeField] private Sprite triangleSprite;
+    [SerializeField] private Sprite squareSprite;
+    [SerializeField] private Sprite circleSprite;
+
     private Rigidbody2D rb;
+    private SpriteRenderer spriteRenderer;
+
     private bool isGrounded;
+    private AbilityForm currentForm;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
+    }
+
+    void Start()
+    {
+        SetAbility(AbilityForm.Triangle);
     }
 
     void Update()
@@ -66,18 +88,38 @@ public class PlayerController : MonoBehaviour
     {
         if (input.ActionPressed)
         {
-            PerformAction();
+            Debug.Log("Acción con forma: " + currentForm);
         }
     }
 
     void ChangeAbility(int direction)
     {
-        Debug.Log("Cambio de habilidad: " + direction);
+        int abilityCount = System.Enum.GetValues(typeof(AbilityForm)).Length;
+        int newIndex = ((int)currentForm + direction + abilityCount) % abilityCount;
+
+        SetAbility((AbilityForm)newIndex);
     }
 
-    void PerformAction()
+    void SetAbility(AbilityForm newForm)
     {
-        Debug.Log("Acción ejecutada");
+        currentForm = newForm;
+
+        switch (currentForm)
+        {
+            case AbilityForm.Triangle:
+                spriteRenderer.sprite = triangleSprite;
+                break;
+
+            case AbilityForm.Square:
+                spriteRenderer.sprite = squareSprite;
+                break;
+
+            case AbilityForm.Circle:
+                spriteRenderer.sprite = circleSprite;
+                break;
+        }
+
+        Debug.Log("Forma actual: " + currentForm);
     }
 
     void OnCollisionEnter2D(Collision2D collision)
