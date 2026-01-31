@@ -4,6 +4,10 @@ using UnityEngine;
 [RequireComponent(typeof(SpriteRenderer))]
 public class PlayerController : MonoBehaviour
 {
+    // =========================
+    // ENUMS & DATA
+    // =========================
+
     public enum AbilityForm
     {
         Triangle,
@@ -11,23 +15,52 @@ public class PlayerController : MonoBehaviour
         Circle
     }
 
+    [System.Serializable]
+    public class MovementConfig
+    {
+        public float moveSpeed;
+        public float jumpForce;
+    }
+
+    // =========================
+    // INSPECTOR REFERENCES
+    // =========================
+
     [Header("References")]
     [SerializeField] private InputManager input;
+    [SerializeField] private Jaguar jaguar;
+    [SerializeField] private Condor condor;
+    [SerializeField] private Serpiente serpiente;
 
-    [Header("Movement")]
-    [SerializeField] private float moveSpeed = 5f;
-    [SerializeField] private float jumpForce = 8f;
+    [Header("Ground Check")]
+    [SerializeField] private Transform groundCheck;
+    [SerializeField] private float groundCheckRadius = 0.15f;
+    [SerializeField] private LayerMask groundLayer;
 
-    [Header("Abilities - Sprites")]
+    [Header("Movement Configs")]
+    [SerializeField] private MovementConfig triangleConfig;
+    [SerializeField] private MovementConfig squareConfig;
+    [SerializeField] private MovementConfig circleConfig;
+
+    [Header("Sprites")]
     [SerializeField] private Sprite triangleSprite;
     [SerializeField] private Sprite squareSprite;
     [SerializeField] private Sprite circleSprite;
 
+    // =========================
+    // PRIVATE STATE
+    // =========================
+
     private Rigidbody2D rb;
     private SpriteRenderer spriteRenderer;
 
-    private bool isGrounded;
     private AbilityForm currentForm;
+    private bool isGrounded;
+    private bool canJump;
+
+    // =========================
+    // UNITY LIFECYCLE
+    // =========================
 
     void Awake()
     {
@@ -42,6 +75,7 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        CheckGround();
         HandleJump();
         HandleAbilities();
         HandleAction();
@@ -52,24 +86,74 @@ public class PlayerController : MonoBehaviour
         HandleMovement();
     }
 
+    // =========================
+    // GROUND CHECK
+    // =========================
+
+    void CheckGround()
+    {
+        bool wasGrounded = isGrounded;
+
+        isGrounded = Physics2D.OverlapCircle(
+            groundCheck.position,
+            groundCheckRadius,
+            groundLayer
+        );
+
+        if (isGrounded && !wasGrounded)
+        {
+            canJump = true;
+
+            if (currentForm == AbilityForm.Triangle)
+            {
+                condor.ResetGlide();
+            }
+        }
+    }
+
+    // =========================
+    // MOVEMENT
+    // =========================
+
     void HandleMovement()
     {
+        float speed = GetCurrentConfig().moveSpeed;
+
         rb.linearVelocity = new Vector2(
-            input.Horizontal * moveSpeed,
+            input.Horizontal * speed,
             rb.linearVelocity.y
         );
     }
 
     void HandleJump()
     {
-        if (input.JumpPressed && isGrounded)
+        // Si estamos planeando, no saltamos
+        if (condor != null && condor.IsGliding)
         {
-            rb.linearVelocity = new Vector2(
-                rb.linearVelocity.x,
-                jumpForce
-            );
+            return;
+        }
+
+        if (input.JumpPressed)
+        {
+            if (canJump)
+            {
+                rb.linearVelocity = new Vector2(
+                    rb.linearVelocity.x,
+                    GetCurrentConfig().jumpForce
+                );
+
+                canJump = false;
+            }
+            else if (currentForm == AbilityForm.Triangle)
+            {
+                condor.TryStartGlide(isGrounded);
+            }
         }
     }
+
+    // =========================
+    // ABILITIES
+    // =========================
 
     void HandleAbilities()
     {
@@ -86,16 +170,29 @@ public class PlayerController : MonoBehaviour
 
     void HandleAction()
     {
-        if (input.ActionPressed)
+        if (!input.ActionPressed)
         {
-            Debug.Log("Acción con forma: " + currentForm);
+            return;
+        }
+
+        if (currentForm == AbilityForm.Square)
+        {
+            jaguar.TryDestroyObstacle();
+        }
+        else
+        {
+            Debug.Log("Acción no disponible para " + currentForm);
         }
     }
 
+    // =========================
+    // FORM MANAGEMENT
+    // =========================
+
     void ChangeAbility(int direction)
     {
-        int abilityCount = System.Enum.GetValues(typeof(AbilityForm)).Length;
-        int newIndex = ((int)currentForm + direction + abilityCount) % abilityCount;
+        int count = System.Enum.GetValues(typeof(AbilityForm)).Length;
+        int newIndex = ((int)currentForm + direction + count) % count;
 
         SetAbility((AbilityForm)newIndex);
     }
@@ -103,6 +200,9 @@ public class PlayerController : MonoBehaviour
     void SetAbility(AbilityForm newForm)
     {
         currentForm = newForm;
+
+        // Desactivar todas las habilidades de fase
+        serpiente.DisablePhase();
 
         switch (currentForm)
         {
@@ -116,22 +216,43 @@ public class PlayerController : MonoBehaviour
 
             case AbilityForm.Circle:
                 spriteRenderer.sprite = circleSprite;
+                serpiente.EnablePhase();
                 break;
         }
 
         Debug.Log("Forma actual: " + currentForm);
     }
 
-    void OnCollisionEnter2D(Collision2D collision)
+    MovementConfig GetCurrentConfig()
     {
-        if (collision.contacts[0].normal.y > 0.5f)
+        switch (currentForm)
         {
-            isGrounded = true;
+            case AbilityForm.Triangle:
+                return triangleConfig;
+
+            case AbilityForm.Square:
+                return squareConfig;
+
+            case AbilityForm.Circle:
+                return circleConfig;
+
+            default:
+                return triangleConfig;
         }
     }
 
-    void OnCollisionExit2D(Collision2D collision)
+    // =========================
+    // DEBUG
+    // =========================
+
+    void OnDrawGizmosSelected()
     {
-        isGrounded = false;
+        if (groundCheck == null)
+        {
+            return;
+        }
+
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
     }
 }
