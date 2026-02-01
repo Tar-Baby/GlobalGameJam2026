@@ -64,6 +64,12 @@ public class PlayerController : MonoBehaviour
     private bool isGrounded;
     private bool canJump;
 
+    [Header("Animation Timing")]
+    [SerializeField] private float saltTriggerCooldown = 0.25f;
+
+    private float saltTriggerTimer;
+    private bool canTriggerSalt = true;
+
     // =========================
     // UNITY LIFECYCLE
     // =========================
@@ -86,6 +92,7 @@ public class PlayerController : MonoBehaviour
         HandleAbilities();
         HandleAction();
         UpdateAnimation();
+        UpdateSaltTriggerTimer();
     }
 
     void FixedUpdate()
@@ -169,15 +176,37 @@ public class PlayerController : MonoBehaviour
 
             canJump = false;
 
-            // 🔥 Trigger de animación de salto
-            if (currentForm == AbilityForm.Triangle && animator.enabled)
+            // 🔥 Trigger Salt con bounce time
+            if (
+                currentForm == AbilityForm.Triangle &&
+                animator.enabled &&
+                canTriggerSalt
+            )
             {
                 animator.SetTrigger("Salt");
+
+                canTriggerSalt = false;
+                saltTriggerTimer = saltTriggerCooldown;
             }
         }
         else if (currentForm == AbilityForm.Triangle)
         {
             condor.TryStartGlide(isGrounded);
+        }
+    }
+
+    void UpdateSaltTriggerTimer()
+    {
+        if (canTriggerSalt)
+        {
+            return;
+        }
+
+        saltTriggerTimer -= Time.deltaTime;
+
+        if (saltTriggerTimer <= 0f)
+        {
+            canTriggerSalt = true;
         }
     }
 
@@ -240,6 +269,7 @@ public class PlayerController : MonoBehaviour
         switch (currentForm)
         {
             case AbilityForm.Mask:
+                animator.SetBool("Vuel", false);
                 animator.enabled = true;
                 spriteRenderer.sprite = null;
                 break;
@@ -250,10 +280,12 @@ public class PlayerController : MonoBehaviour
                 break;
 
             case AbilityForm.Square:
+                animator.SetBool("Vuel", false);
                 spriteRenderer.sprite = squareSprite;
                 break;
 
             case AbilityForm.Circle:
+                animator.SetBool("Vuel", false);
                 spriteRenderer.sprite = circleSprite;
                 serpiente.EnablePhase();
                 break;

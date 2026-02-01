@@ -8,6 +8,9 @@ public class Condor : MonoBehaviour
     [SerializeField] private float verticalFallSpeed = -1.5f;
     [SerializeField] private float gravityScaleWhileGliding = 0.3f;
 
+    [Header("Glide Animator")]
+    [SerializeField] private Animator animator;
+
     private Rigidbody2D rb;
     private float glideTimer;
     private bool isGliding;
@@ -16,6 +19,7 @@ public class Condor : MonoBehaviour
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        animator = GetComponent<Animator>();
     }
 
     public bool IsGliding => isGliding;
@@ -37,6 +41,11 @@ public class Condor : MonoBehaviour
         glideTimer = glideDuration;
 
         rb.gravityScale = gravityScaleWhileGliding;
+
+        if (animator != null && animator.enabled)
+        {
+            animator.SetBool("Vuel", true);
+        }
     }
 
     public void StopGlide()
@@ -48,6 +57,11 @@ public class Condor : MonoBehaviour
 
         isGliding = false;
         rb.gravityScale = 1f;
+
+        if (animator != null && animator.enabled)
+        {
+            animator.SetBool("Vuel", false);
+        }
     }
 
     void FixedUpdate()
