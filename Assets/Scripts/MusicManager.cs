@@ -28,11 +28,13 @@ public class MusicManager : MonoBehaviour
 
         if (sources.Length < 3)
         {
-            Debug.LogError(
-                "MusicManager necesita 3 AudioSources: " +
-                "2 para música y 1 para jingle"
-            );
-            return;
+            int toAdd = 3 - sources.Length;
+            for (int i = 0; i < toAdd; i++)
+            {
+                gameObject.AddComponent<AudioSource>();
+            }
+
+            sources = GetComponents<AudioSource>();
         }
 
         sourceA = sources[0];
