@@ -20,6 +20,13 @@ public class GameManager : MonoBehaviour
     public void GameOver()
     {
         Time.timeScale = 0f;
+
+        MusicManager musicManager = FindObjectOfType<MusicManager>();
+        if (musicManager != null)
+        {
+            musicManager.PlayGameOverJingle();
+        }
+
         gameOverFade.Show();
     }
 

@@ -1,0 +1,129 @@
+using UnityEngine;
+using System.Collections;
+
+public class MusicManager : MonoBehaviour
+{
+    [Header("Music By Form")]
+    [SerializeField] private AudioClip humaMusic;
+    [SerializeField] private AudioClip jaguarMusic;
+    [SerializeField] private AudioClip condorMusic;
+    [SerializeField] private AudioClip serpienteMusic;
+
+    [Header("Jingles")]
+    [SerializeField] private AudioClip gameOverJingle;
+
+    [Header("Fade Settings")]
+    [SerializeField] private float fadeDuration = 1.5f;
+
+    private AudioSource sourceA;
+    private AudioSource sourceB;
+    private AudioSource jingleSource;
+
+    private AudioSource activeSource;
+    private Coroutine fadeCoroutine;
+
+    private void Awake()
+    {
+        AudioSource[] sources = GetComponents<AudioSource>();
+
+        if (sources.Length < 3)
+        {
+            Debug.LogError(
+                "MusicManager necesita 3 AudioSources: " +
+                "2 para música y 1 para jingle"
+            );
+            return;
+        }
+
+        sourceA = sources[0];
+        sourceB = sources[1];
+        jingleSource = sources[2];
+
+        sourceA.loop = true;
+        sourceB.loop = true;
+
+        sourceA.playOnAwake = false;
+        sourceB.playOnAwake = false;
+        jingleSource.playOnAwake = false;
+
+        activeSource = sourceA;
+    }
+
+    // =========================
+    // MUSIC BY FORM (FADE)
+    // =========================
+
+    public void ChangeMusic(PlayerController.AbilityForm form)
+    {
+        AudioClip newClip = GetMusicClip(form);
+
+        if (newClip == null || activeSource.clip == newClip)
+            return;
+
+        AudioSource newSource = activeSource == sourceA ? sourceB : sourceA;
+
+        if (fadeCoroutine != null)
+            StopCoroutine(fadeCoroutine);
+
+        fadeCoroutine = StartCoroutine(CrossFade(newSource, newClip));
+    }
+
+    private IEnumerator CrossFade(AudioSource newSource, AudioClip newClip)
+    {
+        newSource.clip = newClip;
+        newSource.volume = 0f;
+        newSource.Play();
+
+        float time = 0f;
+        AudioSource oldSource = activeSource;
+
+        while (time < fadeDuration)
+        {
+            time += Time.unscaledDeltaTime;
+            float t = time / fadeDuration;
+
+            newSource.volume = Mathf.Lerp(0f, 1f, t);
+            oldSource.volume = Mathf.Lerp(1f, 0f, t);
+
+            yield return null;
+        }
+
+        oldSource.Stop();
+        oldSource.volume = 1f;
+
+        activeSource = newSource;
+    }
+
+    // =========================
+    // GAME OVER
+    // =========================
+
+    public void PlayGameOverJingle()
+    {
+        if (fadeCoroutine != null)
+            StopCoroutine(fadeCoroutine);
+
+        sourceA.Stop();
+        sourceB.Stop();
+
+        jingleSource.clip = gameOverJingle;
+        jingleSource.Play();
+    }
+
+    private AudioClip GetMusicClip(PlayerController.AbilityForm form)
+    {
+        switch (form)
+        {
+            case PlayerController.AbilityForm.Mask:
+                return humaMusic;
+            case PlayerController.AbilityForm.Square:
+                return jaguarMusic;
+            case PlayerController.AbilityForm.Triangle:
+                return condorMusic;
+            case PlayerController.AbilityForm.Circle:
+                return serpienteMusic;
+            default:
+                return null;
+        }
+    }
+}

@@ -10,10 +10,10 @@ public class PlayerController : MonoBehaviour
 
     public enum AbilityForm
     {
-        Triangle,
-        Square,
-        Circle,
-        Mask
+        Triangle, // Cóndor
+        Square, // Jaguar
+        Circle, // Serpiente
+        Mask // Huma
     }
 
     [System.Serializable]
@@ -27,31 +27,33 @@ public class PlayerController : MonoBehaviour
     // INSPECTOR REFERENCES
     // =========================
 
-    [Header("References")]
-    [SerializeField] private InputManager input;
+    [Header("References")] [SerializeField]
+    private InputManager input;
+
     [SerializeField] private Jaguar jaguar;
     [SerializeField] private Condor condor;
     [SerializeField] private Serpiente serpiente;
+    [SerializeField] private MusicManager musicManager;
 
-    [Header("Ground Check")]
-    [SerializeField] private Transform groundCheck;
+    [Header("Ground Check")] [SerializeField]
+    private Transform groundCheck;
+
     [SerializeField] private float groundCheckRadius = 0.15f;
     [SerializeField] private LayerMask groundLayer;
 
-    [Header("Movement Configs")]
-    [SerializeField] private MovementConfig triangleConfig;
+    [Header("Movement Configs")] [SerializeField]
+    private MovementConfig triangleConfig;
+
     [SerializeField] private MovementConfig squareConfig;
     [SerializeField] private MovementConfig circleConfig;
     [SerializeField] private MovementConfig maskConfig;
 
-    [Header("Sprites")]
-    [SerializeField] private Sprite triangleSprite;
+    [Header("Sprites")] [SerializeField] private Sprite triangleSprite;
     [SerializeField] private Sprite squareSprite;
     [SerializeField] private Sprite circleSprite;
     [SerializeField] private Sprite maskSprite;
 
-    [Header("Animation")]
-    [SerializeField] private Animator animator;
+    [Header("Animation")] [SerializeField] private Animator animator;
 
     // =========================
     // PRIVATE STATE
@@ -64,8 +66,8 @@ public class PlayerController : MonoBehaviour
     private bool isGrounded;
     private bool canJump;
 
-    [Header("Animation Timing")]
-    [SerializeField] private float saltTriggerCooldown = 0.25f;
+    [Header("Animation Timing")] [SerializeField]
+    private float saltTriggerCooldown = 0.25f;
 
     private float saltTriggerTimer;
     private bool canTriggerSalt = true;
@@ -82,7 +84,7 @@ public class PlayerController : MonoBehaviour
 
     void Start()
     {
-        SetAbility(AbilityForm.Triangle);
+        SetAbility(AbilityForm.Mask); // ✅ Empieza en Huma
     }
 
     void Update()
@@ -108,13 +110,10 @@ public class PlayerController : MonoBehaviour
     {
         float horizontal = input.Horizontal;
 
-        bool goingLeft = horizontal < -0.01f;
-        bool goingRight = horizontal > 0.01f;
-
-        animator.SetBool("Izq", goingLeft);
-        animator.SetBool("Der", goingRight);
+        animator.SetBool("Izq", horizontal < -0.01f);
+        animator.SetBool("Der", horizontal > 0.01f);
     }
-    
+
     // =========================
     // GROUND CHECK
     // =========================
@@ -134,9 +133,7 @@ public class PlayerController : MonoBehaviour
             canJump = true;
 
             if (currentForm == AbilityForm.Triangle)
-            {
                 condor.ResetGlide();
-            }
         }
     }
 
@@ -146,26 +143,19 @@ public class PlayerController : MonoBehaviour
 
     void HandleMovement()
     {
-        float speed = GetCurrentConfig().moveSpeed;
-
         rb.linearVelocity = new Vector2(
-            input.Horizontal * speed,
+            input.Horizontal * GetCurrentConfig().moveSpeed,
             rb.linearVelocity.y
         );
     }
 
     void HandleJump()
     {
-        // Si estamos planeando, no saltamos
         if (condor != null && condor.IsGliding)
-        {
             return;
-        }
 
         if (!input.JumpPressed)
-        {
             return;
-        }
 
         if (canJump)
         {
@@ -176,7 +166,6 @@ public class PlayerController : MonoBehaviour
 
             canJump = false;
 
-            // 🔥 Trigger Salt con bounce time
             if (
                 currentForm == AbilityForm.Triangle &&
                 animator.enabled &&
@@ -184,7 +173,6 @@ public class PlayerController : MonoBehaviour
             )
             {
                 animator.SetTrigger("Salt");
-
                 canTriggerSalt = false;
                 saltTriggerTimer = saltTriggerCooldown;
             }
@@ -198,16 +186,12 @@ public class PlayerController : MonoBehaviour
     void UpdateSaltTriggerTimer()
     {
         if (canTriggerSalt)
-        {
             return;
-        }
 
         saltTriggerTimer -= Time.deltaTime;
 
         if (saltTriggerTimer <= 0f)
-        {
             canTriggerSalt = true;
-        }
     }
 
     // =========================
@@ -217,31 +201,19 @@ public class PlayerController : MonoBehaviour
     void HandleAbilities()
     {
         if (input.AbilityLeftPressed)
-        {
             ChangeAbility(-1);
-        }
 
         if (input.AbilityRightPressed)
-        {
             ChangeAbility(1);
-        }
     }
 
     void HandleAction()
     {
         if (!input.ActionPressed)
-        {
             return;
-        }
 
         if (currentForm == AbilityForm.Square)
-        {
             jaguar.TryDestroyObstacle();
-        }
-        else
-        {
-            Debug.Log("Acción no disponible para " + currentForm);
-        }
     }
 
     // =========================
@@ -252,7 +224,6 @@ public class PlayerController : MonoBehaviour
     {
         int count = System.Enum.GetValues(typeof(AbilityForm)).Length;
         int newIndex = ((int)currentForm + direction + count) % count;
-
         SetAbility((AbilityForm)newIndex);
     }
 
@@ -260,38 +231,45 @@ public class PlayerController : MonoBehaviour
     {
         currentForm = newForm;
 
-        // Reset habilidades
         serpiente.DisablePhase();
-
-        // Por defecto: sin animaciones
         animator.enabled = false;
 
         switch (currentForm)
         {
-            case AbilityForm.Mask:
+            case AbilityForm.Mask: // Huma
                 animator.SetBool("Vuel", false);
                 animator.enabled = true;
                 spriteRenderer.sprite = null;
                 break;
 
-            case AbilityForm.Triangle:
+            case AbilityForm.Triangle: // Cóndor
                 animator.enabled = true;
                 spriteRenderer.sprite = null;
                 break;
 
-            case AbilityForm.Square:
+            case AbilityForm.Square: // Jaguar
                 animator.SetBool("Vuel", false);
                 spriteRenderer.sprite = squareSprite;
                 break;
 
-            case AbilityForm.Circle:
+            case AbilityForm.Circle: // Serpiente
                 animator.SetBool("Vuel", false);
                 spriteRenderer.sprite = circleSprite;
                 serpiente.EnablePhase();
                 break;
         }
 
+        ChangeMusicByForm(currentForm);
+
         Debug.Log("Forma actual: " + currentForm);
+    }
+
+    void ChangeMusicByForm(AbilityForm form)
+    {
+        if (musicManager == null)
+            return;
+
+        musicManager.ChangeMusic(form);
     }
 
     MovementConfig GetCurrentConfig()
@@ -300,16 +278,12 @@ public class PlayerController : MonoBehaviour
         {
             case AbilityForm.Mask:
                 return maskConfig;
-
             case AbilityForm.Triangle:
                 return triangleConfig;
-
             case AbilityForm.Square:
                 return squareConfig;
-
             case AbilityForm.Circle:
                 return circleConfig;
-
             default:
                 return triangleConfig;
         }
@@ -321,12 +295,5 @@ public class PlayerController : MonoBehaviour
 
     void OnDrawGizmosSelected()
     {
-        if (groundCheck == null)
-        {
-            return;
-        }
-
-        Gizmos.color = Color.green;
-        Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
     }
 }

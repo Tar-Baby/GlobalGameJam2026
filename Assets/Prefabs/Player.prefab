@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: 22099201013212194}
   - component: {fileID: 722255807723626298}
   - component: {fileID: 7851534953641684920}
+  - component: {fileID: 7343564949165627893}
   m_Layer: 10
   m_Name: Player
   m_TagString: Player
@@ -188,6 +189,7 @@ MonoBehaviour:
   jaguar: {fileID: 8032994767653915332}
   condor: {fileID: 22099201013212194}
   serpiente: {fileID: 722255807723626298}
+  musicManager: {fileID: 0}
   groundCheck: {fileID: 3191582920921526303}
   groundCheckRadius: 0.15
   groundLayer:
@@ -214,6 +216,7 @@ MonoBehaviour:
   maskSprite: {fileID: 6013125472935647765, guid: 3d3f174809db42347b5fb690898e0874,
     type: 3}
   animator: {fileID: 7851534953641684920}
+  saltTriggerCooldown: 0.25
 --- !u!114 &8032994767653915332
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -247,6 +250,7 @@ MonoBehaviour:
   horizontalForce: 40
   verticalFallSpeed: -0.5
   gravityScaleWhileGliding: 0.3
+  animator: {fileID: 7851534953641684920}
 --- !u!114 &722255807723626298
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -282,6 +286,19 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &7343564949165627893
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2340019863193090972}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09433a2159b9d174f888a901f1014830, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerFallDeath
+  deathY: -8
 --- !u!1 &5259886159003772221
 GameObject:
   m_ObjectHideFlags: 0
