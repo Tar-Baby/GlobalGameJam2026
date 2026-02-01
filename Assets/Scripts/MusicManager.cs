@@ -22,7 +22,7 @@ public class MusicManager : MonoBehaviour
     private AudioSource activeSource;
     private Coroutine fadeCoroutine;
 
-    private void Awake()
+    void Awake()
     {
         AudioSource[] sources = GetComponents<AudioSource>();
 
@@ -49,26 +49,51 @@ public class MusicManager : MonoBehaviour
         activeSource = sourceA;
     }
 
+    void OnEnable()
+    {
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.PlayerFormChanged += OnPlayerFormChanged;
+        }
+    }
+
+    void OnDisable()
+    {
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.PlayerFormChanged -= OnPlayerFormChanged;
+        }
+    }
+
     // =========================
     // MUSIC BY FORM (FADE)
     // =========================
 
-    public void ChangeMusic(PlayerController.AbilityForm form)
+    void OnPlayerFormChanged(GameManager.PlayerForm form)
+    {
+        ChangeMusic(form);
+    }
+
+    void ChangeMusic(GameManager.PlayerForm form)
     {
         AudioClip newClip = GetMusicClip(form);
 
         if (newClip == null || activeSource.clip == newClip)
+        {
             return;
+        }
 
         AudioSource newSource = activeSource == sourceA ? sourceB : sourceA;
 
         if (fadeCoroutine != null)
+        {
             StopCoroutine(fadeCoroutine);
+        }
 
         fadeCoroutine = StartCoroutine(CrossFade(newSource, newClip));
     }
 
-    private IEnumerator CrossFade(AudioSource newSource, AudioClip newClip)
+    IEnumerator CrossFade(AudioSource newSource, AudioClip newClip)
     {
         newSource.clip = newClip;
         newSource.volume = 0f;
@@ -101,7 +126,9 @@ public class MusicManager : MonoBehaviour
     public void PlayGameOverJingle()
     {
         if (fadeCoroutine != null)
+        {
             StopCoroutine(fadeCoroutine);
+        }
 
         sourceA.Stop();
         sourceB.Stop();
@@ -110,18 +137,26 @@ public class MusicManager : MonoBehaviour
         jingleSource.Play();
     }
 
-    private AudioClip GetMusicClip(PlayerController.AbilityForm form)
+    // =========================
+    // CLIP RESOLUTION
+    // =========================
+
+    AudioClip GetMusicClip(GameManager.PlayerForm form)
     {
         switch (form)
         {
-            case PlayerController.AbilityForm.Mask:
+            case GameManager.PlayerForm.Mask:
                 return humaMusic;
-            case PlayerController.AbilityForm.Square:
+
+            case GameManager.PlayerForm.Jaguar:
                 return jaguarMusic;
-            case PlayerController.AbilityForm.Triangle:
+
+            case GameManager.PlayerForm.Condor:
                 return condorMusic;
-            case PlayerController.AbilityForm.Circle:
+
+            case GameManager.PlayerForm.Serpiente:
                 return serpienteMusic;
+
             default:
                 return null;
         }

@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -7,14 +8,49 @@ public class GameManager : MonoBehaviour
 
     [SerializeField] private GameOverFade gameOverFade;
 
-    private void Awake()
+    public enum PlayerForm
+    {
+        Jaguar,
+        Condor,
+        Serpiente,
+        Mask
+    }
+
+    public PlayerForm CurrentForm { get; private set; } = PlayerForm.Mask;
+
+    public event Action<PlayerForm> PlayerFormChanged;
+
+    void Awake()
     {
         Time.timeScale = 1f;
 
         if (Instance == null)
+        {
             Instance = this;
+        }
         else
+        {
             Destroy(gameObject);
+            return;
+        }
+    }
+
+    public void SetPlayerForm(PlayerForm form)
+    {
+        if (CurrentForm == form)
+        {
+            return;
+        }
+
+        CurrentForm = form;
+        PlayerFormChanged?.Invoke(CurrentForm);
+    }
+
+    public void CyclePlayerForm(int direction)
+    {
+        int count = Enum.GetValues(typeof(PlayerForm)).Length;
+        int newIndex = ((int)CurrentForm + direction + count) % count;
+        SetPlayerForm((PlayerForm)newIndex);
     }
 
     public void GameOver()
