@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 7695029535080374895}
   - component: {fileID: 2527762368300547289}
   - component: {fileID: 878993774586020445}
+  - component: {fileID: 6518111375212934778}
   m_Layer: 0
   m_Name: Player 1
   m_TagString: Untagged
@@ -124,6 +125,19 @@ MonoBehaviour:
   condorRoot: {fileID: 3123816422863791777}
   serpienteRoot: {fileID: 6012147269990421251}
   maskRoot: {fileID: 6341015394628077981}
+--- !u!114 &6518111375212934778
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2521866851592741814}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09433a2159b9d174f888a901f1014830, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerFallDeath
+  deathY: -8
 --- !u!1 &3123816422863791777
 GameObject:
   m_ObjectHideFlags: 0
