@@ -72,6 +72,16 @@ public class PlayerController : MonoBehaviour
     private float saltTriggerTimer;
     private bool canTriggerSalt = true;
 
+    [Header("Square Attack Animation")]
+    [SerializeField] private float attackTriggerCooldown = 0.3f;
+    [SerializeField] private float chargeTimeRequired = 0.8f;
+
+    private float attackTriggerTimer;
+    private bool canTriggerAttack = true;
+
+    private float chargeTimer;
+    private bool isCharging;
+
     // =========================
     // UNITY LIFECYCLE
     // =========================
@@ -84,7 +94,7 @@ public class PlayerController : MonoBehaviour
 
     void Start()
     {
-        SetAbility(AbilityForm.Mask); // ✅ Empieza en Huma
+        SetAbility(AbilityForm.Square);
     }
 
     void Update()
@@ -95,6 +105,7 @@ public class PlayerController : MonoBehaviour
         HandleAction();
         UpdateAnimation();
         UpdateSaltTriggerTimer();
+        UpdateAttackTriggerTimer();
     }
 
     void FixedUpdate()
@@ -112,6 +123,13 @@ public class PlayerController : MonoBehaviour
 
         animator.SetBool("Izq", horizontal < -0.01f);
         animator.SetBool("Der", horizontal > 0.01f);
+
+        if (currentForm == AbilityForm.Square && isCharging)
+        {
+            animator.SetBool("Izq", false);
+            animator.SetBool("Der", false);
+            return;
+        }
     }
 
     // =========================
@@ -143,8 +161,20 @@ public class PlayerController : MonoBehaviour
 
     void HandleMovement()
     {
+        // Bloquear movimiento lateral si el cuadrado está cargando ataque
+        if (currentForm == AbilityForm.Square && isCharging)
+        {
+            rb.linearVelocity = new Vector2(
+                0f,
+                rb.linearVelocity.y
+            );
+            return;
+        }
+
+        float speed = GetCurrentConfig().moveSpeed;
+
         rb.linearVelocity = new Vector2(
-            input.Horizontal * GetCurrentConfig().moveSpeed,
+            input.Horizontal * speed,
             rb.linearVelocity.y
         );
     }
@@ -209,11 +239,71 @@ public class PlayerController : MonoBehaviour
 
     void HandleAction()
     {
-        if (!input.ActionPressed)
+        if (currentForm != AbilityForm.Square)
+        {
             return;
+        }
 
-        if (currentForm == AbilityForm.Square)
-            jaguar.TryDestroyObstacle();
+        // Mantener botón → cargar
+        if (input.ActionHeld)
+        {
+            HandleCharge();
+            return;
+        }
+
+        // Soltar botón
+        if (input.ActionReleased)
+        {
+            ReleaseChargeOrAttack();
+        }
+    }
+
+    void HandleCharge()
+    {
+        if (isCharging)
+        {
+            chargeTimer += Time.deltaTime;
+            return;
+        }
+
+        isCharging = true;
+        chargeTimer = 0f;
+
+        if (animator.enabled)
+        {
+            animator.SetBool("Carga", true);
+        }
+    }
+
+    void ReleaseChargeOrAttack()
+    {
+        if (animator.enabled)
+        {
+            animator.SetBool("Carga", false);
+        }
+
+        bool chargedAttack = chargeTimer >= chargeTimeRequired;
+
+        if (canTriggerAttack)
+        {
+            animator.SetTrigger("ataq");
+
+            canTriggerAttack = false;
+            attackTriggerTimer = attackTriggerCooldown;
+        }
+
+        isCharging = false;
+        chargeTimer = 0f;
+
+        // Aquí luego puedes diferenciar daño normal vs cargado
+        if (chargedAttack)
+        {
+            Debug.Log("Ataque CARGADO");
+        }
+        else
+        {
+            Debug.Log("Ataque normal");
+        }
     }
 
     // =========================
@@ -229,6 +319,11 @@ public class PlayerController : MonoBehaviour
 
     void SetAbility(AbilityForm newForm)
     {
+
+        animator.SetBool("Carga", false);
+        isCharging = false;
+        chargeTimer = 0f;
+
         currentForm = newForm;
 
         serpiente.DisablePhase();
@@ -249,7 +344,8 @@ public class PlayerController : MonoBehaviour
 
             case AbilityForm.Square: // Jaguar
                 animator.SetBool("Vuel", false);
-                spriteRenderer.sprite = squareSprite;
+                animator.enabled = true;
+                spriteRenderer.sprite = null;
                 break;
 
             case AbilityForm.Circle: // Serpiente
@@ -286,6 +382,21 @@ public class PlayerController : MonoBehaviour
                 return circleConfig;
             default:
                 return triangleConfig;
+        }
+    }
+
+    void UpdateAttackTriggerTimer()
+    {
+        if (canTriggerAttack)
+        {
+            return;
+        }
+
+        attackTriggerTimer -= Time.deltaTime;
+
+        if (attackTriggerTimer <= 0f)
+        {
+            canTriggerAttack = true;
         }
     }
 
