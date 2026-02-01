@@ -12,7 +12,8 @@ public class PlayerController : MonoBehaviour
     {
         Triangle,
         Square,
-        Circle
+        Circle,
+        Mask
     }
 
     [System.Serializable]
@@ -41,11 +42,16 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private MovementConfig triangleConfig;
     [SerializeField] private MovementConfig squareConfig;
     [SerializeField] private MovementConfig circleConfig;
+    [SerializeField] private MovementConfig maskConfig;
 
     [Header("Sprites")]
     [SerializeField] private Sprite triangleSprite;
     [SerializeField] private Sprite squareSprite;
     [SerializeField] private Sprite circleSprite;
+    [SerializeField] private Sprite maskSprite;
+
+    [Header("Animation")]
+    [SerializeField] private Animator animator;
 
     // =========================
     // PRIVATE STATE
@@ -79,6 +85,7 @@ public class PlayerController : MonoBehaviour
         HandleJump();
         HandleAbilities();
         HandleAction();
+        UpdateAnimation();
     }
 
     void FixedUpdate()
@@ -86,6 +93,21 @@ public class PlayerController : MonoBehaviour
         HandleMovement();
     }
 
+    // =========================
+    // ANIMATIONS
+    // =========================
+
+    void UpdateAnimation()
+    {
+        float horizontal = input.Horizontal;
+
+        bool goingLeft = horizontal < -0.01f;
+        bool goingRight = horizontal > 0.01f;
+
+        animator.SetBool("Izq", goingLeft);
+        animator.SetBool("Der", goingRight);
+    }
+    
     // =========================
     // GROUND CHECK
     // =========================
@@ -133,21 +155,29 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        if (input.JumpPressed)
+        if (!input.JumpPressed)
         {
-            if (canJump)
-            {
-                rb.linearVelocity = new Vector2(
-                    rb.linearVelocity.x,
-                    GetCurrentConfig().jumpForce
-                );
+            return;
+        }
 
-                canJump = false;
-            }
-            else if (currentForm == AbilityForm.Triangle)
+        if (canJump)
+        {
+            rb.linearVelocity = new Vector2(
+                rb.linearVelocity.x,
+                GetCurrentConfig().jumpForce
+            );
+
+            canJump = false;
+
+            // 🔥 Trigger de animación de salto
+            if (currentForm == AbilityForm.Triangle && animator.enabled)
             {
-                condor.TryStartGlide(isGrounded);
+                animator.SetTrigger("Salt");
             }
+        }
+        else if (currentForm == AbilityForm.Triangle)
+        {
+            condor.TryStartGlide(isGrounded);
         }
     }
 
@@ -201,13 +231,22 @@ public class PlayerController : MonoBehaviour
     {
         currentForm = newForm;
 
-        // Desactivar todas las habilidades de fase
+        // Reset habilidades
         serpiente.DisablePhase();
+
+        // Por defecto: sin animaciones
+        animator.enabled = false;
 
         switch (currentForm)
         {
+            case AbilityForm.Mask:
+                animator.enabled = true;
+                spriteRenderer.sprite = null;
+                break;
+
             case AbilityForm.Triangle:
-                spriteRenderer.sprite = triangleSprite;
+                animator.enabled = true;
+                spriteRenderer.sprite = null;
                 break;
 
             case AbilityForm.Square:
@@ -227,6 +266,9 @@ public class PlayerController : MonoBehaviour
     {
         switch (currentForm)
         {
+            case AbilityForm.Mask:
+                return maskConfig;
+
             case AbilityForm.Triangle:
                 return triangleConfig;
 
