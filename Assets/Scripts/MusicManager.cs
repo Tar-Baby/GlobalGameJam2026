@@ -22,6 +22,15 @@ public class MusicManager : MonoBehaviour
     private AudioSource activeSource;
     private Coroutine fadeCoroutine;
 
+    
+    
+    void Start()
+    {
+        if (GameManager.Instance != null)
+        {
+            ChangeMusic(GameManager.Instance.CurrentForm);
+        }
+    }
     void Awake()
     {
         AudioSource[] sources = GetComponents<AudioSource>();
